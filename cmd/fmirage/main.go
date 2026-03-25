@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmirage/internal/config"
+	"fmirage/internal/fuzzer"
 	"fmirage/internal/utils"
 
 	"fmt"
@@ -25,4 +26,7 @@ func main() {
 		return
 	}
 	fmt.Printf("Loaded %d words from the wordlist.\n", len(words))
+
+	f := fuzzer.NewFuzzer(cfg, words)
+	f.Start()
 }
