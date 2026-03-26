@@ -11,9 +11,7 @@ import (
 func main() {
 	fmt.Println("   Welcome to Fmirage")
 	cfg := config.ParseFlags()
-	fmt.Printf("Target URL: %s\n", cfg.TargetURL)
-	fmt.Printf("Wordlist: %s\n", cfg.Wordlist)
-	fmt.Printf("Threads: %d\n", cfg.Threads)
+	fmt.Printf("%s", cfg.String())
 	if cfg.ProxiesFile != "" {
 		fmt.Printf("Proxies File: %s\n", cfg.ProxiesFile)
 	} else {

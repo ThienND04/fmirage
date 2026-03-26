@@ -2,27 +2,14 @@ package fuzzer
 
 import (
 	"bytes"
+	"fmirage/internal/output"
 	"fmt"
 	"io"
 	"sync"
 	"time"
 )
 
-type Result struct {
-	URL        string
-	StatusCode int
-	Size       int64
-	Lines      int
-	Words      int
-	Duration   int64
-}
-
-func (r Result) String() string {
-	return fmt.Sprintf("URL: %s | Status: %d | Size: %d bytes | Lines: %d | Words: %d | Time: %d ms",
-		r.URL, r.StatusCode, r.Size, r.Lines, r.Words, r.Duration)
-}
-
-func (f *Fuzzer) worker(id int, jobs <-chan string, results chan<- Result, wg *sync.WaitGroup) {
+func (f *Fuzzer) worker(id int, jobs <-chan string, results chan<- output.Result, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	for url := range jobs {
@@ -35,15 +22,31 @@ func (f *Fuzzer) worker(id int, jobs <-chan string, results chan<- Result, wg *s
 		duration := time.Since(startTime).Milliseconds()
 		bodyBytes, err := io.ReadAll(resp.Body)
 		resp.Body.Close()
+		if err != nil {
+			fmt.Printf("[Worker %d] Error reading response body for %s: %v\n", id, url, err)
+			continue
+		}
 
-		results <- Result{
+		size := resp.ContentLength
+		if size < 0 {
+			size = int64(len(bodyBytes))
+		}
+
+		result := output.Result{
 			URL:        url,
 			StatusCode: resp.StatusCode,
-			Size:       resp.ContentLength,
+			Size:       size,
 			Lines:      bytes.Count(bodyBytes, []byte{'\n'}),
 			Words:      len(bytes.Fields(bodyBytes)),
 			Duration:   duration,
 		}
+
+		if (!f.Cfg.DisableMatcher && !f.Filter.ShouldMatch(&result)) ||
+			f.Filter.ShouldDrop(&result) {
+			continue
+		}
+
+		results <- result
 	}
 
 }
