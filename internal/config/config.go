@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"reflect"
+	"strings"
 )
 
 type Config struct {
@@ -19,29 +20,29 @@ type Config struct {
 	MatchWords     string
 	MatchLines     string
 
-	DisableFilter bool
-	FilterCodes   string
-	FilterSizes   string
-	FilterWords   string
-	FilterLines   string
+	FilterCodes string
+	FilterSizes string
+	FilterWords string
+	FilterLines string
 }
 
 func (c *Config) String() string {
-	var configStr string = ""
+	var builder strings.Builder
 
 	v := reflect.ValueOf(*c)
 	typeOfS := v.Type()
 
 	for i := 0; i < v.NumField(); i++ {
-		fieldName := typeOfS.Field(i).Name
-		fieldValue := v.Field(i).Interface()
-
-		if fieldValue != "" {
-			configStr += fmt.Sprintf("%s: %v\n", fieldName, fieldValue)
+		if v.Field(i).IsZero() {
+			continue
 		}
 
+		fieldName := typeOfS.Field(i).Name
+		fieldValue := v.Field(i).Interface()
+		builder.WriteString(fmt.Sprintf("%s: %v\n", fieldName, fieldValue))
 	}
-	return configStr
+
+	return builder.String()
 }
 
 func ParseFlags() *Config {
@@ -59,7 +60,6 @@ func ParseFlags() *Config {
 	flag.StringVar(&cfg.MatchLines, "ml", "", "Response line counts to match, separated by commas")
 
 	// filter flags
-	flag.BoolVar(&cfg.DisableFilter, "no-filter", false, "Disable filter mode (include results that match criteria)")
 	flag.StringVar(&cfg.FilterCodes, "fc", "", "Status codes to filter out, separated by commas")
 	flag.StringVar(&cfg.FilterSizes, "fs", "", "Response sizes to filter out, separated by commas")
 	flag.StringVar(&cfg.FilterWords, "fw", "", "Word counts to filter out, separated by commas")

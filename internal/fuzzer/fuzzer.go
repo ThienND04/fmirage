@@ -41,13 +41,7 @@ func (f *Fuzzer) Start() {
 
 	go func() {
 		for _, word := range f.Wordlist {
-			var targetURL string
-			if strings.Contains(f.Cfg.TargetURL, "FUZZ") {
-				targetURL = strings.ReplaceAll(f.Cfg.TargetURL, "FUZZ", word)
-			} else {
-				targetURL = strings.TrimRight(f.Cfg.TargetURL, "/") + "/" + word
-			}
-			jobs <- targetURL
+			jobs <- f.buildTargetURL(word)
 		}
 		close(jobs)
 	}()
@@ -65,4 +59,12 @@ func (f *Fuzzer) Start() {
 	}
 	fmt.Println("---------------------------------------------------")
 	fmt.Printf("[*] Quét hoàn tất! Tìm thấy %d kết quả.\n", foundCount)
+}
+
+func (f *Fuzzer) buildTargetURL(word string) string {
+	if strings.Contains(f.Cfg.TargetURL, "FUZZ") {
+		return strings.ReplaceAll(f.Cfg.TargetURL, "FUZZ", word)
+	}
+
+	return strings.TrimRight(f.Cfg.TargetURL, "/") + "/" + word
 }

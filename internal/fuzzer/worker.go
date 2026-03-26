@@ -22,18 +22,27 @@ func (f *Fuzzer) worker(id int, jobs <-chan string, results chan<- output.Result
 		duration := time.Since(startTime).Milliseconds()
 		bodyBytes, err := io.ReadAll(resp.Body)
 		resp.Body.Close()
+		if err != nil {
+			fmt.Printf("[Worker %d] Error reading response body for %s: %v\n", id, url, err)
+			continue
+		}
+
+		size := resp.ContentLength
+		if size < 0 {
+			size = int64(len(bodyBytes))
+		}
 
 		result := output.Result{
 			URL:        url,
 			StatusCode: resp.StatusCode,
-			Size:       resp.ContentLength,
+			Size:       size,
 			Lines:      bytes.Count(bodyBytes, []byte{'\n'}),
 			Words:      len(bytes.Fields(bodyBytes)),
 			Duration:   duration,
 		}
 
 		if (!f.Cfg.DisableMatcher && !f.Filter.ShouldMatch(&result)) ||
-			(!f.Cfg.DisableFilter && f.Filter.ShouldDrop(&result)) {
+			f.Filter.ShouldDrop(&result) {
 			continue
 		}
 
