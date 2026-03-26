@@ -2,6 +2,8 @@ package fuzzer
 
 import (
 	"fmirage/internal/config"
+	"fmirage/internal/filter"
+	"fmirage/internal/output"
 	"fmt"
 	"net/http"
 	"strings"
@@ -12,6 +14,7 @@ type Fuzzer struct {
 	Cfg      *config.Config
 	Wordlist []string
 	Client   *http.Client
+	Filter   *filter.Filter
 }
 
 func NewFuzzer(cfg *config.Config, wordlist []string) *Fuzzer {
@@ -20,13 +23,14 @@ func NewFuzzer(cfg *config.Config, wordlist []string) *Fuzzer {
 		Cfg:      cfg,
 		Wordlist: wordlist,
 		Client:   client,
+		Filter:   filter.New(cfg),
 	}
 }
 
 func (f *Fuzzer) Start() {
 	fmt.Printf("Starting fuzzing with %d threads...\n", f.Cfg.Threads)
 	jobs := make(chan string, len(f.Wordlist))
-	results := make(chan Result, len(f.Wordlist))
+	results := make(chan output.Result, len(f.Wordlist))
 	var wg sync.WaitGroup
 
 	// Start worker goroutines
